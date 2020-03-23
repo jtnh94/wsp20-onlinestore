@@ -22,6 +22,15 @@ app.get('/home', frontEndHandler);
 app.get('/add', frontEndHandler);
 app.get('/show', frontEndHandler);
 
+const session = require('express-session')
+app.use(session(
+    {
+        secret: 'anysecretstring.asfkha!',
+        saveUninitialized: false,
+        resave: false
+    }
+))
+
 const firebase = require('firebase')
 
 // Your web app's Firebase configuration
@@ -68,8 +77,13 @@ app.post('/b/signin', async (req, res) => {
     const password = req.body.password
     const auth = firebase.auth()
     try{
-        const user = await auth.signInWithEmailAndPassword(email, password)
-        res.redirect('/')
+        const userRecord = await auth.signInWithEmailAndPassword(email, password)
+        if(userRecord.user.email === Constants.SYSADMINEMAIL){
+            res.redirect('/admin/sysadmin')
+        }
+        else{
+            res.redirect('/')
+        }
     } catch (e) {
         res.render('signin', {error: e, user: req.user})
     }
@@ -92,10 +106,75 @@ app.get('/b/profile', auth, (req, res) => {
     }
 })
 
+app.get('/b/signup', (req, res) => {
+    res.render('signup.ejs', {page: 'signup', user: null, error: false})
+})
+
+const ShoppingCart = require('./model/ShoppingCart.js')
+
+app.post('/b/add2cart', async (req, res) => {
+    const id = req.body.docId
+    const collection = firebase.firestore().collection(Constants.COLL_PRODUCTS)
+    try{
+        const doc = await collection.doc(id).get()
+        let cart
+        if(!req.session.cart){
+            //first time adding to cart
+            cart = new ShoppingCart()
+        }
+        else{
+            //recover shopping cart
+            cart = ShoppingCart.deserialize(req.session.cart)
+        }
+        const {name, price, summary, image, image_url} = doc.data()
+        cart.add({id, name, price, summary, image, image_url})
+        req.session.cart = cart.serialize()
+        res.redirect('/b/shoppingcart')
+    } catch (e) {
+        res.send(JSON.stringify(e))
+    }
+})
+
+app.get('/b/shoppingcart', (req, res) => {
+    let cart
+    if(!req.session.cart){
+        cart = new ShoppingCart()
+    }
+    else{
+        cart = ShoppingCart.deserialize(req.session.cart)
+    }
+    res.send(JSON.stringify(cart.contents))
+})
+
 //middleware
 function auth(req, res, next){
     req.user = firebase.auth().currentUser
     next()
+}
+
+const adminUtil = require('./adminUtil.js')
+
+// admin API
+app.post('/admin/signup', (req, res) => {
+    return adminUtil.createUser(req,res)
+})
+
+app.get('/admin/sysadmin', authSysAdmin, (req, res) => {
+    res.render('admin/sysadmin.ejs')
+})
+
+app.get('/admin/listUsers', authSysAdmin, (req, res) => {
+    return adminUtil.listUsers(req, res)
+})
+
+function authSysAdmin(req, res, next) {
+    const user = firebase.auth().currentUser
+    if(!user || !user.email || user.email !== Constants.SYSADMINEMAIL){
+        res.send("<h1>System Admin Page: Access Denied!</h1>")
+    }
+    else{
+        next()
+    }
 }
 
 app.get('/testlogin', (req, res) => {

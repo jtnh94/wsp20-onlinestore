@@ -9,7 +9,7 @@
     <title>Sign In</title>
   </head>
   <body>
-      <%- include('partials/nav.ejs', {page: 'signin', user}) %>
+      <%- include('partials/nav.ejs', {page: 'signin', user, cartCount: 0}) %>
 
     <form class="form-signin" action="/b/signin" method="post">
       <h3>Please Sign in</h3>

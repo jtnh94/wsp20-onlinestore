@@ -9,7 +9,7 @@
     <title>Sign Up</title>
   </head>
   <body>
-      <%- include('partials/nav.ejs') %>
+      <%- include('partials/nav.ejs', {cartCount: 0}) %>
 
     <form class="form-signin" action="/admin/signup" method="post">
       <h3>Create an account</h3>

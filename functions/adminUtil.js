@@ -9,6 +9,7 @@ admin.initializeApp({
 });
 
 const Constants = require('./myconstants.js')
+const nodemailer = require('nodemailer')
 
 
 async function createUser(req, res){
@@ -22,7 +23,11 @@ async function createUser(req, res){
       await admin.auth().createUser(
         {email, password, displayName, phoneNumber, photoURL}
       )
-      res.render('signin.ejs', {page: 'signin', user: false, error: 'Account created! Sign in please'})
+
+      link = await admin.auth().generateEmailVerificationLink(email)
+      sendVerificationLink(email, link)
+
+      res.render('signin.ejs', {page: 'signin', user: false, error: 'Account created! Please check your email for a verification link.'})
   } catch(e) {
       res.render('signup.ejs', {error: e, user: false, page: 'signup'})
   }
@@ -70,10 +75,100 @@ async function checkOut(data){
   }
 }
 
+function sendInvoice(email, cart){
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'webserver2020jh@gmail.com',
+        pass: 'WSP2020!'
+    }
+  })
+
+  let totalPrice = 0
+
+  let message = (
+    `
+    <h1>Thank you! Your order has been received.</h1>
+    <table style="border: 2px solid #333;"> 
+    <tr>
+      <th></th>
+      <th>Product</th>
+      <th>Quantity</th>
+      <th>Price</th>
+    </tr>`
+  )
+
+  cart.forEach((item) => {
+    message += 
+    `<tr>
+      <td><img src="${item.product.image_url}" style="width: 100px"></td>
+      <td>${item.product.summary}</td>
+      <td>${item.qty}</td>
+      <td>${item.product.price}</td>
+    </tr>`
+  })
+
+  cart.forEach((item) => {
+    totalPrice += item.product.price
+  })
+
+  message += `<tr style="font-size:15px">Total:</tr>
+    <td style="font-size:30px">${totalPrice.toFixed(2)}</td>
+    </table>
+  `
+  
+  let mailOptions = {
+    from: 'Web Server 2020 <webserver2020jh@gmail.com>',
+    to: email,
+    subject: 'Invoice - Web Server 2020',
+    html: message
+  }
+
+  transporter.sendMail(mailOptions, function(e){
+    if(err) {
+        console.log(e)
+    }
+    else{
+        console.log("EMAIL SENT")
+    }
+  })
+
+  cart.forEach((item) => {
+    console.log(item.product.price)
+  })
+}
+
+function sendVerificationLink(email, link){
+
+  let transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'webserver2020jh@gmail.com',
+        pass: 'WSP2020!'
+    }
+  })
+
+  let mailOptions = {
+    from: 'Web Server 2020 <webserver2020jh@gmail.com>',
+    to: email,
+    subject: 'Email Verification - Web Server 2020',
+    text: link
+  }
+
+  transporter.sendMail(mailOptions, function(e){
+    if(err) {
+        console.log(e)
+    }
+    else{
+        console.log("VERIFICATION EMAIL SENT")
+    }
+  })
+}
 module.exports = {
   createUser,
   listUsers,
   verifyIdToken,
   getOrderHistory,
   checkOut,
+  sendInvoice,
 }

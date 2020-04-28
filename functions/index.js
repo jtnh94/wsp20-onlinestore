@@ -135,16 +135,21 @@ app.post('/b/signin', async (req, res) => {
     try{
         firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
         const userRecord = await auth.signInWithEmailAndPassword(email, password)
-        const idToken = await userRecord.user.getIdToken()
-        await auth.signOut()
+        if(!userRecord.user.emailVerified){
+            const idToken = await userRecord.user.getIdToken()
+            req.session.idToken = idToken
+            await auth.signOut()
 
-        req.session.idToken = idToken
+            res.render('signin.ejs' , {page: 'signin', user: false, error: 'Your email is not verified yet!'})
+        }
+
         if(userRecord.user.email === Constants.SYSADMINEMAIL){
             res.setHeader('Cache-Control', 'private');
             res.redirect('/admin/sysadmin')
         }
         else{
             if(!req.session.cart){
+                console.log(userRecord.user.emailVerified)
                 res.setHeader('Cache-Control', 'private');
                 res.redirect('/')
             }
@@ -175,7 +180,7 @@ app.get('/b/signout', async (req, res) => {
 
 app.get('/b/profile', authAndRedirectSignIn, (req, res) => {
         const cartCount = req.session.cart ? req.session.cart.length : 0
-        console.log('============ decodedIdToken', req.decodedIdToken)
+        // console.log('============ decodedIdToken', req.decodedIdToken)
         res.setHeader('Cache-Control', 'private');
         res.render('profile', {user: req.decodedIdToken, cartCount, orders: false})
 })
@@ -242,9 +247,12 @@ app.post('/b/checkout', authAndRedirectSignIn, async (req, res) => {
 
     try{
         await adminUtil.checkOut(data)
+        await adminUtil.sendInvoice(req.decodedIdToken.email, req.session.cart)
         req.session.cart = null;
+
         res.setHeader('Cache-Control', 'private');
         return res.render('shoppingcart.ejs', {message: 'Checked out successfully!', cart: new ShoppingCart(), user: req.decodedIdToken, cartCount: 0})
+        
     } catch (e) {
         const cart = ShoppingCart.deserialize(req.session.cart)
         res.setHeader('Cache-Control', 'private');

@@ -21,7 +21,7 @@
                 <img src="<%= p.data.image_url %>" class="card-img-top">
                 <div class="card-body">
                 <h5 class="card-title"><%= p.data.name %> </h5>
-                <p class="card-text">$(<%= p.data.price %>)<br> <%= p.data.summary %></p>
+                <p class="card-text">$<%= p.data.price %><br> <%= p.data.summary %></p>
                 <form action="/b/add2cart" method="post">
                     <input type="hidden" name="docId" value="<%= p.id %>">
                     <button type="submit" class="btn btn-primary">Add to ShoppingCart</button>
@@ -30,6 +30,15 @@
             </div>
         <% } %>
     <% } %>
+
+    <br>
+    <form action="/b/prev" class="text-center">
+        <button type="submit" class="btn btn-outline-primary">Prev</button>
+    </form>
+
+    <form action="/b/next" class="text-center">
+        <button type="submit" class="btn btn-outline-primary">Next</button>
+    </form>
 
     <%- include('partials/scripts.ejs') %>
     </body>

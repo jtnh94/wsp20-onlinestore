@@ -34,7 +34,6 @@ app.use(session(
         rolling: true, // reset maxAge at every response
     }
 ))
-
 const firebase = require('firebase')
 
 // Your web app's Firebase configuration
@@ -57,9 +56,10 @@ app.get('/', auth, async (req, res) => {
     // console.log('==========', req.decodedIdToken ? req.decodedIdToken.email : 'no user')
     const cartCount = req.session.cart ? req.session.cart.length : 0
     const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
+
     try{
         let products = []
-        const snapshot = await coll.orderBy("name").get()
+        const snapshot = await coll.orderBy("name").limit(10).get()
         snapshot.forEach(doc => {
             products.push({id: doc.id, data: doc.data()})
         })
@@ -67,6 +67,48 @@ app.get('/', auth, async (req, res) => {
         res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
     } catch (e){
         res.setHeader('Cache-Control', 'private');
+        res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
+    }
+})
+
+app.get('/b/next', auth, async (req, res) => {
+    const cartCount = req.session.cart ? req.session.cart.length : 0
+    const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
+
+    try{
+        let products = []
+        const snapshot = await coll.orderBy("name").limit(10).get()
+        let last = snapshot.docs[snapshot.docs.length - 1]
+
+        const snapshot2 = await coll.orderBy("name").startAfter(last).limit(10).get()
+        snapshot2.forEach(doc => {
+            products.push({id: doc.id, data: doc.data()})
+        })
+        res.setHeader('Cache-Control', 'private');
+        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
+    } catch (e){
+        res.setHeader('Cache-Control', 'private');  
+        res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
+    }
+})
+
+app.get('/b/prev', auth, async (req, res) => {
+    const cartCount = req.session.cart ? req.session.cart.length : 0
+    const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
+
+    try{
+        let products = []
+        const snapshot = await coll.orderBy("name").limit(10).get()
+        let last = snapshot.docs[snapshot.docs.length - 1]
+
+        const snapshot2 = await coll.orderBy("name").endBefore(last).limit(10).get()
+        snapshot2.forEach(doc => {
+            products.push({id: doc.id, data: doc.data()})
+        })
+        res.setHeader('Cache-Control', 'private');
+        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
+    } catch (e){
+        res.setHeader('Cache-Control', 'private');  
         res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
     }
 })

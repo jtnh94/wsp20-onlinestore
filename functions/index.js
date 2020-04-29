@@ -1,4 +1,3 @@
-let counter = "a"
 let pageNum = 1
 
 const functions = require('firebase-functions');
@@ -322,11 +321,11 @@ app.post('/b/checkout', authAndRedirectSignIn, async (req, res) => {
 
     try{
         await adminUtil.checkOut(data)
-        await adminUtil.sendInvoice(req.decodedIdToken.email, req.session.cart)
+        adminUtil.sendInvoice(req, res)
         req.session.cart = null;
 
         res.setHeader('Cache-Control', 'private');
-        return res.render('shoppingcart.ejs', {message: 'Checked out successfully! Invoice has been sent to your email.', cart: new ShoppingCart(), user: req.decodedIdToken, cartCount: 0})
+        return res.render('shoppingcart.ejs', {message: 'Checked out successfully!', cart: new ShoppingCart(), user: req.decodedIdToken, cartCount: 0})
         
     } catch (e) {
         const cart = ShoppingCart.deserialize(req.session.cart)

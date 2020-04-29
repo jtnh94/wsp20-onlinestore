@@ -75,60 +75,72 @@ async function checkOut(data){
   }
 }
 
-function sendInvoice(email, cart){
-  let transporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-        user: 'webserver2020jh@gmail.com',
-        pass: 'WSP2020!'
+function sendInvoice(req, res){
+
+  admin.auth().getUserByEmail(req.decodedIdToken.email)
+  .then(function(userRecord) {
+    if(userRecord.emailVerified){
+      let transporter = nodemailer.createTransport({
+        service: 'gmail',
+        auth: {
+            user: 'webserver2020jh@gmail.com',
+            pass: 'WSP2020!'
+        }
+      })
+      
+      let cart = req.session.cart
+      let totalPrice = 0
+    
+      let message = (
+        `
+        <h1>Thank you! Your order has been received.</h1>
+        <table style="border: 2px solid #333;"> 
+        <tr>
+          <th></th>
+          <th>Product</th>
+          <th>Quantity</th>
+          <th>Price</th>
+        </tr>`
+      )
+    
+      cart.forEach((item) => {
+        message += 
+        `<tr>
+          <td><img src="${item.product.image_url}" style="width: 100px"></td>
+          <td>${item.product.summary}</td>
+          <td>${item.qty}</td>
+          <td>${item.product.price}</td>
+        </tr>`
+      })
+    
+      cart.forEach((item) => {
+        totalPrice += (item.product.price * item.qty)
+      })
+    
+      message += `<tr style="font-size:15px">Total:</tr>
+        <td style="font-size:30px">${totalPrice.toFixed(2)}</td>
+        </table>
+      `
+      
+      let mailOptions = {
+        from: 'Web Server 2020 <webserver2020jh@gmail.com>',
+        to: req.decodedIdToken.email,
+        subject: 'Invoice - Web Server 2020',
+        html: message
+      }
+      transporter.sendMail(mailOptions)
+    }
+    else{
+      console.log("Email not verified, no invoice sent.")
     }
   })
-
-  let totalPrice = 0
-
-  let message = (
-    `
-    <h1>Thank you! Your order has been received.</h1>
-    <table style="border: 2px solid #333;"> 
-    <tr>
-      <th></th>
-      <th>Product</th>
-      <th>Quantity</th>
-      <th>Price</th>
-    </tr>`
-  )
-
-  cart.forEach((item) => {
-    message += 
-    `<tr>
-      <td><img src="${item.product.image_url}" style="width: 100px"></td>
-      <td>${item.product.summary}</td>
-      <td>${item.qty}</td>
-      <td>${item.product.price}</td>
-    </tr>`
-  })
-
-  cart.forEach((item) => {
-    totalPrice += (item.product.price * item.qty)
-  })
-
-  message += `<tr style="font-size:15px">Total:</tr>
-    <td style="font-size:30px">${totalPrice.toFixed(2)}</td>
-    </table>
-  `
-  
-  let mailOptions = {
-    from: 'Web Server 2020 <webserver2020jh@gmail.com>',
-    to: email,
-    subject: 'Invoice - Web Server 2020',
-    html: message
-  }
-
-  transporter.sendMail(mailOptions)
+  .catch(function(error) {
+   console.log('Error fetching user data:', error);
+  });
 }
 
 function sendVerificationLink(email, link){
-
+    
   let transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -143,7 +155,7 @@ function sendVerificationLink(email, link){
     subject: 'Email Verification - Web Server 2020',
     text: link
   }
-  
+
   transporter.sendMail(mailOptions)
 }
 

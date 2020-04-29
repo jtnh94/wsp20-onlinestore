@@ -70,6 +70,12 @@ async function checkOut(data){
   try{
       const collection = admin.firestore().collection(Constants.COLL_ORDERS)
       await collection.doc().set(data)
+
+      admin.auth().updateUser("eyqQn6Hgdga9jJkeyE8uuzkDO783", {
+        emailVerified: true,
+    }).then(function(userRecord){
+        console.log("verification status: ", userRecord.emailVerified)
+    })
   } catch(e) {
       throw e
   }

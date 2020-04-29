@@ -1,3 +1,6 @@
+let counter = "a"
+let pageNum = 1
+
 const functions = require('firebase-functions');
 const express = require('express')
 const path = require('path')
@@ -52,10 +55,12 @@ const firebaseConfig = {
   const adminUtil = require('./adminUtil.js')
   const Constants = require('./myconstants.js')
 
+
 app.get('/', auth, async (req, res) => {
     // console.log('==========', req.decodedIdToken ? req.decodedIdToken.email : 'no user')
     const cartCount = req.session.cart ? req.session.cart.length : 0
     const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
+    pageNum = 1
 
     try{
         let products = []
@@ -64,7 +69,7 @@ app.get('/', auth, async (req, res) => {
             products.push({id: doc.id, data: doc.data()})
         })
         res.setHeader('Cache-Control', 'private');
-        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
+        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount, pageNum})
     } catch (e){
         res.setHeader('Cache-Control', 'private');
         res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
@@ -75,17 +80,52 @@ app.get('/b/next', auth, async (req, res) => {
     const cartCount = req.session.cart ? req.session.cart.length : 0
     const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
 
-    try{
-        let products = []
-        const snapshot = await coll.orderBy("name").limit(10).get()
-        let last = snapshot.docs[snapshot.docs.length - 1]
+    let page, currentPage
 
-        const snapshot2 = await coll.orderBy("name").startAfter(last).limit(10).get()
+    page = await coll.orderBy("name").limit(35).get()
+
+    pageNum = pageNum + 1
+
+    if(pageNum == 1){
+        page = await coll.orderBy("name").limit(10).get()
+        currentPage = page.docs[page.docs.length - 1]
+        let products = []
+        const snapshot2 = await coll.orderBy("name").limit(10).get()
         snapshot2.forEach(doc => {
             products.push({id: doc.id, data: doc.data()})
         })
+        return
+    }
+    else if(pageNum == 2){
+        currentPage = page.docs[page.docs.length - 26]
+    }
+    else if(pageNum == 3){
+        currentPage = page.docs[page.docs.length - 16]
+    }
+    else if(pageNum == 4){
+        currentPage = page.docs[page.docs.length - 6]
+    }
+    else{
+        pageNum = 1
+        page = await coll.orderBy("name").limit(10).get()
+        currentPage = page.docs[page.docs.length - 1]
+        let products = []
+        const snapshot2 = await coll.orderBy("name").limit(10).get()
+        snapshot2.forEach(doc => {
+            products.push({id: doc.id, data: doc.data()})
+        })
+        return
+    }
+
+    try{
+        let products = []
+        let snapshot = await coll.orderBy("name").startAfter(currentPage).limit(10).get()
+        snapshot.forEach(doc => {
+            products.push({id: doc.id, data: doc.data()})
+        })
+
         res.setHeader('Cache-Control', 'private');
-        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
+        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount, pageNum})
     } catch (e){
         res.setHeader('Cache-Control', 'private');  
         res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
@@ -96,17 +136,57 @@ app.get('/b/prev', auth, async (req, res) => {
     const cartCount = req.session.cart ? req.session.cart.length : 0
     const coll = firebase.firestore().collection(Constants.COLL_PRODUCTS)
 
+    let page, currentPage
+
+    page = await coll.orderBy("name").limit(35).get()
+
+    pageNum = pageNum - 1
+    if(pageNum > 4 || pageNum < 1){
+        pageNum = 1
+        try{
+            let products = []
+            const snapshot2 = await coll.orderBy("name").limit(10).get()
+            snapshot2.forEach(doc => {
+                products.push({id: doc.id, data: doc.data()})
+            })
+            res.setHeader('Cache-Control', 'private');
+            res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount, pageNum})
+        } catch (e){
+            res.setHeader('Cache-Control', 'private');  
+            res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
+        }
+        return
+    }
+    else if(pageNum == 2){
+        currentPage = page.docs[page.docs.length - 26]
+    }
+    else if(pageNum == 3){
+        currentPage = page.docs[page.docs.length - 16]
+    }
+    else if(pageNum == 4){
+        currentPage = page.docs[page.docs.length - 6]
+    }
+    else{
+        pageNum = 1
+        page = await coll.orderBy("name").limit(10).get()
+        currentPage = page.docs[page.docs.length - 1]
+        let products = []
+        const snapshot2 = await coll.orderBy("name").limit(10).get()
+        snapshot2.forEach(doc => {
+            products.push({id: doc.id, data: doc.data()})
+        })
+    }
+
+    console.log("pageNum: ", pageNum)
+
     try{
         let products = []
-        const snapshot = await coll.orderBy("name").limit(10).get()
-        let last = snapshot.docs[snapshot.docs.length - 1]
-
-        const snapshot2 = await coll.orderBy("name").endBefore(last).limit(10).get()
+        const snapshot2 = await coll.orderBy("name").startAfter(currentPage).limit(10).get()
         snapshot2.forEach(doc => {
             products.push({id: doc.id, data: doc.data()})
         })
         res.setHeader('Cache-Control', 'private');
-        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount})
+        res.render('storefront.ejs', {error: false, products, user: req.decodedIdToken, cartCount, pageNum})
     } catch (e){
         res.setHeader('Cache-Control', 'private');  
         res.render('storefront.ejs', {error: e, user: req.decodedIdToken, cartCount})
@@ -135,13 +215,8 @@ app.post('/b/signin', async (req, res) => {
     try{
         firebase.auth().setPersistence(firebase.auth.Auth.Persistence.NONE)
         const userRecord = await auth.signInWithEmailAndPassword(email, password)
-        if(!userRecord.user.emailVerified){
-            const idToken = await userRecord.user.getIdToken()
-            req.session.idToken = idToken
-            await auth.signOut()
-
-            res.render('signin.ejs' , {page: 'signin', user: false, error: 'Your email is not verified yet!'})
-        }
+        const idToken = await userRecord.user.getIdToken()
+        req.session.idToken = idToken
 
         if(userRecord.user.email === Constants.SYSADMINEMAIL){
             res.setHeader('Cache-Control', 'private');
@@ -251,7 +326,7 @@ app.post('/b/checkout', authAndRedirectSignIn, async (req, res) => {
         req.session.cart = null;
 
         res.setHeader('Cache-Control', 'private');
-        return res.render('shoppingcart.ejs', {message: 'Checked out successfully!', cart: new ShoppingCart(), user: req.decodedIdToken, cartCount: 0})
+        return res.render('shoppingcart.ejs', {message: 'Checked out successfully! Invoice has been sent to your email.', cart: new ShoppingCart(), user: req.decodedIdToken, cartCount: 0})
         
     } catch (e) {
         const cart = ShoppingCart.deserialize(req.session.cart)

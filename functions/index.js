@@ -321,7 +321,7 @@ app.post('/b/checkout', authAndRedirectSignIn, async (req, res) => {
 
     try{
         await adminUtil.checkOut(data)
-        adminUtil.sendInvoice(req, res)
+        await adminUtil.sendInvoice(req, res)
         req.session.cart = null;
 
         res.setHeader('Cache-Control', 'private');

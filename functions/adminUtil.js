@@ -75,10 +75,10 @@ async function checkOut(data){
   }
 }
 
-function sendInvoice(req, res){
+async function sendInvoice(req, res){
 
-  admin.auth().getUserByEmail(req.decodedIdToken.email)
-  .then(function(userRecord) {
+  try{
+    const userRecord = await admin.auth().getUserByEmail(req.decodedIdToken.email)
     if(userRecord.emailVerified){
       let transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -133,10 +133,9 @@ function sendInvoice(req, res){
     else{
       console.log("Email not verified, no invoice sent.")
     }
-  })
-  .catch(function(error) {
-   console.log('Error fetching user data:', error);
-  });
+  } catch (e) {
+    console.log('Error fetching user data:', e)
+  }
 }
 
 function sendVerificationLink(email, link){

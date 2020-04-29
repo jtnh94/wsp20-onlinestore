@@ -86,7 +86,7 @@ app.get('/b/next', auth, async (req, res) => {
 
     pageNum = pageNum + 1
 
-    if(pageNum == 1){
+    if(pageNum === 1){
         page = await coll.orderBy("name").limit(10).get()
         currentPage = page.docs[page.docs.length - 1]
         let products = []
@@ -96,13 +96,13 @@ app.get('/b/next', auth, async (req, res) => {
         })
         return
     }
-    else if(pageNum == 2){
+    else if(pageNum === 2){
         currentPage = page.docs[page.docs.length - 26]
     }
-    else if(pageNum == 3){
+    else if(pageNum === 3){
         currentPage = page.docs[page.docs.length - 16]
     }
-    else if(pageNum == 4){
+    else if(pageNum === 4){
         currentPage = page.docs[page.docs.length - 6]
     }
     else{
@@ -157,13 +157,13 @@ app.get('/b/prev', auth, async (req, res) => {
         }
         return
     }
-    else if(pageNum == 2){
+    else if(pageNum === 2){
         currentPage = page.docs[page.docs.length - 26]
     }
-    else if(pageNum == 3){
+    else if(pageNum === 3){
         currentPage = page.docs[page.docs.length - 16]
     }
-    else if(pageNum == 4){
+    else if(pageNum === 4){
         currentPage = page.docs[page.docs.length - 6]
     }
     else{

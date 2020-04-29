@@ -9,7 +9,7 @@ admin.initializeApp({
 });
 
 const Constants = require('./myconstants.js')
-const nodemailer = require('nodemailer')
+var nodemailer = require('nodemailer')
 
 
 async function createUser(req, res){
@@ -70,12 +70,6 @@ async function checkOut(data){
   try{
       const collection = admin.firestore().collection(Constants.COLL_ORDERS)
       await collection.doc().set(data)
-
-      admin.auth().updateUser("eyqQn6Hgdga9jJkeyE8uuzkDO783", {
-        emailVerified: true,
-    }).then(function(userRecord){
-        console.log("verification status: ", userRecord.emailVerified)
-    })
   } catch(e) {
       throw e
   }
@@ -115,7 +109,7 @@ function sendInvoice(email, cart){
   })
 
   cart.forEach((item) => {
-    totalPrice += item.product.price
+    totalPrice += (item.product.price * item.qty)
   })
 
   message += `<tr style="font-size:15px">Total:</tr>
@@ -130,18 +124,7 @@ function sendInvoice(email, cart){
     html: message
   }
 
-  transporter.sendMail(mailOptions, function(e){
-    if(err) {
-        console.log(e)
-    }
-    else{
-        console.log("EMAIL SENT")
-    }
-  })
-
-  cart.forEach((item) => {
-    console.log(item.product.price)
-  })
+  transporter.sendMail(mailOptions)
 }
 
 function sendVerificationLink(email, link){
@@ -160,16 +143,10 @@ function sendVerificationLink(email, link){
     subject: 'Email Verification - Web Server 2020',
     text: link
   }
-
-  transporter.sendMail(mailOptions, function(e){
-    if(err) {
-        console.log(e)
-    }
-    else{
-        console.log("VERIFICATION EMAIL SENT")
-    }
-  })
+  
+  transporter.sendMail(mailOptions)
 }
+
 module.exports = {
   createUser,
   listUsers,
